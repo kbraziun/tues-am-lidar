@@ -135,11 +135,64 @@ plot(ndvi,
      main = "NDVI for TEAK site")
 
 # mask data
-nFacing.ndvi <- mask(ndvi, asp.ns)
+nsFacing.ndvi <- mask(ndvi, asp.ns)
 
 # plot it
-plot(nFacing.ndvi, 
+plot(nsFacing.ndvi, 
      main = "NDVI for north- and south-facing slopes \nTEAK field site")
 
 ```
 
+## Subset aspect raster to only select north-facing slopes
+
+```{r subset-raster-north }
+
+# subset raster so only north-facing slopes have a value
+asp.n <- asp.ns == 1
+asp.n[asp.n == 0] <- NA
+
+# test plot
+plot(asp.n,
+     main = "North-facing slopes \nTEAK field site")
+
+```
+
+## Use this new north-facing raster to mask NDVI
+
+```{r mask-raster-north }
+
+# mask NDVI with north-facing slopes
+nFacing.ndvi <- mask(ndvi, asp.n)
+
+# plot
+plot(nFacing.ndvi,
+     main = "NDVI for north-facing slopes \nTEAK field site")
+
+```
+
+## Subset aspect raster to only select south-facing slopes
+
+```{r subset-raster-south }
+
+# subset raster so only south-facing slopes have a value
+asp.s <- asp.ns == 2
+asp.s[asp.s == 0] <- NA
+
+# test plot
+plot(asp.s,
+     main = "South-facing slopes \nTEAK field site")
+
+```
+
+## Use this new south-facing raster to mask NDVI
+
+```{r mask-raster-south }
+
+# mask NDVI with south-facing slopes
+sFacing.ndvi <- mask(ndvi, asp.s)
+
+# plot
+plot(sFacing.ndvi,
+     main = "NDVI for south-facing slopes \nTEAK field site")
+
+```
