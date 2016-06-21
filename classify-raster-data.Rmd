@@ -1,0 +1,145 @@
+---
+title: "classify-raster-data"
+author: "Kristin Braziunas"
+date: "June 21, 2016"
+output: html_document
+---
+
+## Learning how to classify raster data
+
+```{r import-libraries }
+
+# load libraries
+library(raster)
+library(rgdal)
+
+```
+
+## Import CHM (Canopy Height Model)
+
+```{r import-canopy-height }
+
+# import TEAK CHM
+chm <- raster("../NEONdata/D17-California/TEAK/2013/lidar/TEAK_lidarCHM.tif")
+
+# test plot
+plot(chm, main = "Plot TEAK CHM using raster package")
+
+# test stretch image
+image(log(chm), main = "Plot TEAK CHM image \nJust render pixels that stretch to fill the space")
+
+```
+
+## Deal with 0 values
+
+```{r assign-values-na }
+
+# plot hist to identify 0 values
+hist(chm)
+
+# set 0 values to NA
+chm[chm == 0] <- NA
+
+# look at hist again
+hist(chm, xlab = "Tree height (m)")  # lots of tall trees
+
+```
+
+## Read in aspect layer
+
+```{r import-aspect-data }
+
+# read in aspect
+aspect <- raster("../NEONdata/D17-California/TEAK/2013/lidar/TEAK_lidarAspect.tif")
+
+# plot aspect
+plot(aspect, main = "Plot of TEAK aspect data")
+
+```
+
+## Let's look at how aspect relates to tree height
+
+Are trees taller on north or south aspects?
+
+First, we will set north-facing slopes to 1 and south-facing slopes to 2.
+* North-facing slopes are 0-45 and 315-360 degrees, Class = 1
+* South-facing slopes are 135-225 degrees, Class = 2
+
+## Create classification matrix
+
+```{r class-matrix }
+
+# create array of values
+class.m <- c(0, 45, 1,
+             45, 135, NA,
+             135, 225, 2,
+             225, 315, NA,
+             315, 360, 1)
+
+# shape values into matrix
+rcl.m <- matrix(class.m,
+                ncol = 3,
+                byrow = TRUE)
+
+# let's look at our matrix
+rcl.m
+
+```
+
+## Now reclassify the raster
+
+```{r perform-reclass }
+
+# reclassify raster using matrix
+asp.ns <- reclassify(aspect,
+                     rcl.m)
+
+# plot reclassified raster
+plot(asp.ns, main = "North- and south-facing slopes")
+
+```
+
+## Export Geotiff
+
+Save reclassified matrix as output.
+
+```{r export-tiff, eval=FALSE }
+
+writeRaster(asp.ns,
+            file = "../outputs/TEAK/TEAK_nsAspect2.tif",
+            options = "COMPRESS=LZW", 
+            NAflag = -9999)
+
+# compress to keep file size as small as possible
+
+```
+
+## Create a mask
+
+We want to create a raster mask that will compare two rasters only at the selected points of north- and south-facing slopes. This masks out the data we are not interested in.
+
+Important: When using a mask to compare two different rasters, need to pay attention to:
+*Are the two rasters the same resolution?
+*Are the locations matched up or is there georeference data in the raster?
+
+```{r create-raster-mask }
+
+# create a mask from asp.ns
+asp.ns
+
+# import NDVI layer
+ndvi <- raster("../NEONdata/D17-California/TEAK/2013/spectrometer/veg_index/TEAK_NDVI.tif")
+
+# plot it
+plot(ndvi,
+     main = "NDVI for TEAK site")
+
+# mask data
+nFacing.ndvi <- mask(ndvi, asp.ns)
+
+# plot it
+plot(nFacing.ndvi, 
+     main = "NDVI for north- and south-facing slopes \nTEAK field site")
+
+```
+
